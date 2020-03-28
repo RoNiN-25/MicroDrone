@@ -10,10 +10,11 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 #define USE_SERIAL Serial
 #define ssid "ESPap"
 #define password "qwerty123"
-String data = "";
+int throttle = 0,yaw = 0,pitch = 0,roll = 0;
+String d = "";
+int *data;
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
-  int *k;
 
     switch(type) {
         case WStype_DISCONNECTED:
@@ -31,12 +32,20 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         case WStype_TEXT:
             //USE_SERIAL.printf("[%u] get Text: %s\n", num, payload);
             
-            data = (char*)payload;
-            k = split(data);
-            Serial.printf("angle1=%d\tstr1=%d\tangle2=%d\tstr2=%d\n",k[0],k[1],k[2],k[3]);
-            free(k);
+            d = (char*)payload;
+            data = split(d);
+            Serial.printf("Yaw=%d\tThrottle=%d\tRoll=%d\tPitch=%d\n",data[0],data[1],data[2],data[3]);
+            
+            yaw = map(data[0],-100,100,0,255);
+            throttle = map(data[1],0,200,0,255);
+            roll = map(data[2],-100,100,0,255);
+            pitch = map(data[3],-100,100,0,255);
+            
+            free(data);
+            free(d);
             
             // send message to client
+            
            webSocket.sendTXT(num, "Received");
 
             // send data to all connected clients

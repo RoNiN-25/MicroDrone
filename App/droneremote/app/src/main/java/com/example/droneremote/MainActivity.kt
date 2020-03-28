@@ -1,6 +1,7 @@
 package com.example.droneremote
 
-import android.graphics.Color import android.os.Bundle
+import android.graphics.Color
+import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import io.github.controlwear.virtual.joystick.android.JoystickView
@@ -9,16 +10,16 @@ import okhttp3.*
 
 class MainActivity : AppCompatActivity() {
 
-    val SERVER_IP = "http://192.168.4.1:81"
-    val client = OkHttpClient()
-    var request: Request? = null
-    val listener = WebSocketListen()
-    var ws:WebSocket? = null
-    var connected = 0
-    var angle1 = 0
-    var angle2 = 0
-    var str1 = 0
-    var str2 = 0
+    private val SERVER_IP = "http://192.168.4.1:81"
+    private val client = OkHttpClient()
+    private var request: Request? = null
+    private val listener = WebSocketListen()
+    private var ws:WebSocket? = null
+    private var connected = 0
+    private var angle1 = 0
+    private var angle2 = 0
+    private var str1 = 0
+    private var str2 = 0
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +56,14 @@ class MainActivity : AppCompatActivity() {
 
     fun sendData()
     {
-        ws?.send("$angle1;$str1;$angle2;$str2;")
+        val data = convertData(angle1,str1,angle2,str2)
+        val yaw = data[0]
+        val throttle = data[1]
+        val roll = data[2]
+        val pitch = data[3]
+        println("Yaw=$yaw\tThrottle=$throttle\tRoll=$roll\tpitch=$pitch")
+//        ws?.send("$angle1;$str1;$angle2;$str2;")
+        ws?.send("$yaw;$throttle;$roll;$pitch")
     }
 
 
@@ -75,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         {
             request = Request.Builder().url(SERVER_IP).build()
             ws = client.newWebSocket(request!!, listener)
-            buConnect.text = "Disconnect"
+            buConnect.text = resources.getText(R.string.disconnect)
             buConnect.setBackgroundColor(Color.RED)
             connected = 1
 
@@ -83,9 +91,22 @@ class MainActivity : AppCompatActivity() {
         else
         {
             ws?.close(1000,"Done")
-            buConnect.text = "Connect"
+            buConnect.text = resources.getString(R.string.connect)
             buConnect.setBackgroundColor(Color.LTGRAY)
             connected = 0
         }
     }
-}
+
+    private fun convertData(angle1:Int, strength1:Int, angle2:Int, strength2:Int):List<Int>
+    {
+        var ang1 = angle1.toDouble()
+        var ang2 = angle2.toDouble()
+        ang1 *= kotlin.math.PI/180
+        ang2 *= kotlin.math.PI/180
+        val x1 = (strength1 * kotlin.math.cos(ang1)).toInt()
+        val y1 = (strength1 * kotlin.math.sin(ang1) + 100).toInt()
+        val x2 = (strength2 * kotlin.math.cos(ang2)).toInt()
+        val y2 = (strength2 * kotlin.math.sin(ang2)).toInt()
+        return listOf(x1,y1,x2,y2)
+    }
+  }
